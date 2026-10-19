@@ -1,5 +1,7 @@
-streamlit
-tensorflow
-numpy
-scikit-learn
-pickle-mixin
+# Runtime dependencies for app.py (Streamlit Community Cloud, CPU only).
+# Tested with Python 3.13 (select 3.13 or 3.12 in the app's Advanced settings;
+# tensorflow-cpu 2.21 has no wheels for Python 3.14).
+streamlit==1.66.0
+tensorflow-cpu==2.21.0
+keras==3.15.1
+numpy==2.5.4

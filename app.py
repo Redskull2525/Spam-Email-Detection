@@ -2,6 +2,7 @@ import streamlit as st
 import tensorflow as tf
 import pickle
 import os
+import string
 from tensorflow.keras.preprocessing.sequence import pad_sequences
 
 # -----------------------------
@@ -18,6 +19,7 @@ st.set_page_config(
 # -----------------------------
 MODEL_PATH = "model/spam_model.keras"
 TOKENIZER_PATH = "model/tokenizer.pkl"
+STOPWORDS_PATH = "model/stopwords.txt"
 MAX_LEN = 100
 THRESHOLD = 0.65
 
@@ -39,6 +41,24 @@ def load_model_and_tokenizer():
 
 model, tokenizer = load_model_and_tokenizer()
 
+
+@st.cache_resource(show_spinner=False)
+def load_stopwords():
+    if not os.path.exists(STOPWORDS_PATH):
+        return set()
+    with open(STOPWORDS_PATH, encoding="utf-8") as f:
+        return set(f.read().split())
+
+
+STOP_WORDS = load_stopwords()
+PUNCT_TABLE = str.maketrans("", "", string.punctuation)
+
+
+def clean_text(text):
+    """Same cleaning as training.ipynb: drop 'Subject', punctuation, stopwords; lowercase."""
+    text = text.replace("Subject", "").translate(PUNCT_TABLE)
+    return " ".join(w.lower() for w in text.split() if w.lower() not in STOP_WORDS)
+
 # -----------------------------
 # UI
 # -----------------------------
@@ -57,7 +77,7 @@ if model is None or tokenizer is None:
     st.markdown(
         """
         ### How to fix this:
-        1. Run `training.ipynb` to train the model  
+        1. Run `notebooks/training.ipynb` from the repo root to train the model  
         2. This will create:
            - `model/spam_model.keras`
            - `model/tokenizer.pkl`
@@ -84,7 +104,7 @@ if st.button("🔍 Predict"):
     if email_text.strip() == "":
         st.warning("⚠️ Please enter some email text.")
     else:
-        sequence = tokenizer.texts_to_sequences([email_text])
+        sequence = tokenizer.texts_to_sequences([clean_text(email_text)])
         padded = pad_sequences(sequence, maxlen=MAX_LEN, padding="post")
 
         probability = model.predict(padded, verbose=0)[0][0]
